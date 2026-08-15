@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Avatar Parlante</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 20%,#34205b,#100b1d 65%);color:#fff;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px}.app{text-align:center;width:min(520px,100%)}h1{margin:0 0 18px}.face{width:280px;height:280px;margin:0 auto 24px;border-radius:50%;background:linear-gradient(145deg,#f3b56f,#b65b35);border:8px solid #e6a84e;box-shadow:0 0 45px #e6a84e66;position:relative;transition:.2s}.face.listening{box-shadow:0 0 70px #62e6ff,0 0 20px #fff}.eyes{position:absolute;top:92px;left:55px;right:55px;display:flex;justify-content:space-between}.eye{width:45px;height:58px;background:#fff;border-radius:50%;position:relative}.pupil{width:18px;height:24px;background:#181020;border-radius:50%;position:absolute;left:14px;top:19px}.mouth{position:absolute;left:88px;top:170px;width:104px;height:30px;border-bottom:7px solid #381b21;border-radius:0 0 60px 60px;transition:.15s}.speaking .mouth{height:48px;border:7px solid #381b21;border-radius:50%}.status{min-height:28px;opacity:.9;margin-bottom:12px}.text{min-height:55px;background:#ffffff12;border:1px solid #ffffff25;border-radius:16px;padding:14px;margin-bottom:16px}.controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}button{border:0;border-radius:999px;padding:13px 20px;font-weight:700;cursor:pointer;background:#e6a84e;color:#201321}button.secondary{background:#ffffff18;color:#fff;border:1px solid #ffffff30}button:disabled{opacity:.5;cursor:not-allowed}.hint{font-size:13px;opacity:.65;margin-top:16px}
+</style>
+</head>
+<body>
+<main class="app">
+<h1>✨ Avatar Parlante</h1>
+<div id="face" class="face"><div class="eyes"><div class="eye"><div class="pupil"></div></div><div class="eye"><div class="pupil"></div></div></div><div class="mouth"></div></div>
+<div id="status" class="status">Pulsa «Escuchar» y habla.</div>
+<div id="text" class="text">Aquí aparecerá lo que diga el micrófono.</div>
+<div class="controls"><button id="listen">🎙️ Escuchar</button><button id="stop" class="secondary" disabled>⏹ Parar</button></div>
+<div class="hint">Necesita permiso para usar el micrófono. En Android funciona mejor con Chrome y conexión segura (HTTPS).</div>
+</main>
+<script>
+const face=document.getElementById('face'),status=document.getElementById('status'),text=document.getElementById('text'),listen=document.getElementById('listen'),stop=document.getElementById('stop');
+const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+let recognition;
+function speak(message){if(!('speechSynthesis' in window))return; speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(message);u.lang='es-ES';u.rate=.95;u.pitch=1.05;u.onstart=()=>face.classList.add('speaking');u.onend=()=>face.classList.remove('speaking');speechSynthesis.speak(u)}
+if(!SpeechRecognition){status.textContent='Este navegador no permite reconocimiento de voz. Prueba Chrome.';listen.disabled=true}else{
+ recognition=new SpeechRecognition();recognition.lang='es-ES';recognition.continuous=false;recognition.interimResults=true;
+ recognition.onstart=()=>{face.classList.add('listening');status.textContent='🎙️ Te estoy escuchando…';listen.disabled=true;stop.disabled=false};
+ recognition.onresult=e=>{let final='';for(let i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)final+=e.results[i][0].transcript;else text.textContent='Escuchando: '+e.results[i][0].transcript}if(final){text.textContent=final;respond(final)}};
+ recognition.onerror=e=>{face.classList.remove('listening');status.textContent=e.error==='not-allowed'?'Debes permitir el micrófono.':'No he podido escucharte: '+e.error};
+ recognition.onend=()=>{face.classList.remove('listening');listen.disabled=false;stop.disabled=true;if(status.textContent.includes('escuchando'))status.textContent='Pulsa «Escuchar» para hablar de nuevo.'};
+ listen.onclick=()=>{try{recognition.start()}catch(e){}};stop.onclick=()=>recognition.stop();
+}
+function respond(message){const m=message.toLowerCase();let answer='Te he escuchado: '+message+'. Todavía estoy aprendiendo a responder, pero ya puedo escucharte y hablar.';if(m.includes('hola'))answer='¡Hola! Me alegra escucharte.';else if(m.includes('cómo estás')||m.includes('como estas'))answer='Estoy genial. ¡Gracias por preguntar!';else if(m.includes('qué puedes hacer')||m.includes('que puedes hacer'))answer='Puedo escucharte y responderte con voz. Poco a poco podemos añadir muchas más funciones.';status.textContent='💬 Respondiendo…';speak(answer)}
+</script>
+</body>
+</html>
