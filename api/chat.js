@@ -11,21 +11,28 @@ export default async function handler(req, res) {
     if (!Array.isArray(messages)) return res.status(400).json({ error: 'Mensajes inválidos' });
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'DIAGNÓSTICO: GEMINI_API_KEY no está disponible en esta función de Vercel.' });
-    const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: String(m.content || '') }] }));
-    // Gemini 2.5 Flash is unavailable to new users. Use the current production Flash model instead.
+
+    const contents = messages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: String(m.content || '') }]
+    }));
+
     const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
       body: JSON.stringify({
-        system_instruction: { parts: [{ text: 'Eres un genio mágico de lámpara simpático, carismático y cercano. Habla siempre en español y responde de forma breve y natural.' }] },
+        system_instruction: { parts: [{ text: `Eres un genio mágico de lámpara simpático, carismático y cercano. Habla siempre en español. Da respuestas completas, útiles y naturales, normalmente de 2 a 5 párrafos cuando la pregunta lo necesite. No cortes las respuestas ni las hagas artificialmente breves.\n\nTienes acceso a Búsqueda de Google. Debes usarla cuando la pregunta dependa de información actual, noticias, precios, horarios, resultados deportivos, productos, lugares, datos recientes o cuando el usuario pida explícitamente buscar en Internet. Si la información puede haber cambiado desde tu conocimiento, busca antes de responder. Basa la respuesta en los resultados encontrados y no inventes datos actuales.` }] },
         contents,
-        generationConfig: { maxOutputTokens: 400 }
+        tools: [{ google_search: {} }],
+        generationConfig: { maxOutputTokens: 1200, temperature: 0.7 }
       })
     });
+
     const data = await response.json();
     if (!response.ok) return res.status(502).json({ error: `DIAGNÓSTICO GEMINI: ${data?.error?.message || `HTTP ${response.status}`}` });
     const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('').trim();
     if (!text) return res.status(502).json({ error: 'DIAGNÓSTICO GEMINI: la respuesta no contiene texto.' });
+
     return res.status(200).json({ text });
   } catch (error) {
     console.error('CHAT ERROR', error);
