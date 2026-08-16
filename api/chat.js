@@ -12,13 +12,14 @@ export default async function handler(req, res) {
     const geminiKey = process.env.GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'DIAGNÓSTICO: GEMINI_API_KEY no está disponible en esta función de Vercel.' });
     const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: String(m.content || '') }] }));
-    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+    // Gemini 2.5 Flash is unavailable to new users. Use the current production Flash model instead.
+    const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': geminiKey },
       body: JSON.stringify({
         system_instruction: { parts: [{ text: 'Eres un genio mágico de lámpara simpático, carismático y cercano. Habla siempre en español y responde de forma breve y natural.' }] },
         contents,
-        generationConfig: { temperature: 0.85, maxOutputTokens: 400 }
+        generationConfig: { maxOutputTokens: 400 }
       })
     });
     const data = await response.json();
