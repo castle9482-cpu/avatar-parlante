@@ -1,16 +1,9 @@
 {
   "functions": {
     "api/chat.js": {
-      "runtime": "nodejs22.x",
       "maxDuration": 30
     }
   },
-  "rewrites": [
-    {
-      "source": "/api/chat",
-      "destination": "/api/chat.js"
-    }
-  ],
   "headers": [
     {
       "source": "/api/(.*)",
